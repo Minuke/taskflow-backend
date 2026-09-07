@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     project_name: str = "TaskFlow API"
     cors_origins: list[str] = ["http://localhost:4200"]
+    database_url: str
 
 
 settings = Settings()
