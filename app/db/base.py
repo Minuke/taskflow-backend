@@ -17,3 +17,5 @@ class Base(DeclarativeBase):
     """Clase base de la que heredan todos los modelos ORM del proyecto."""
 
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
+
+CASCADE_DELETE_ORPHAN = "all, delete-orphan"

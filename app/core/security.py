@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
-
+import hashlib
+import secrets
 import jwt
 from pwdlib import PasswordHash
 
@@ -28,3 +29,13 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
     )
     payload = {"sub": subject, "exp": expire}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+
+def generate_refresh_token() -> str:
+    """Genera un token opaco con 256 bits de entropía criptográficamente segura."""
+    return secrets.token_urlsafe(32)
+
+
+def hash_refresh_token(raw_token: str) -> str:
+    """SHA-256: rápido y determinista, suficiente para un valor ya de alta entropía
+    (a diferencia de las contraseñas, que necesitan un hash lento como Argon2)."""
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()

@@ -1,13 +1,15 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from app.models.category import Category
+    from app.models.refresh_token import RefreshToken
     from app.models.task import Task
 
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import CASCADE_DELETE_ORPHAN, Base
 
 
 class User(Base):
@@ -22,5 +24,6 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    categories: Mapped[list["Category"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    tasks: Mapped[list["Task"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    categories: Mapped[list["Category"]] = relationship(back_populates="user", cascade=CASCADE_DELETE_ORPHAN)
+    tasks: Mapped[list["Task"]] = relationship(back_populates="user", cascade=CASCADE_DELETE_ORPHAN)
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user", cascade=CASCADE_DELETE_ORPHAN)
