@@ -2,7 +2,8 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
+from app.api.deps import get_current_user
+from app.schemas.user import Token, UserCreate, UserRead
 from app.core.config import settings
 from app.core.security import DUMMY_PASSWORD_HASH, hash_password, verify_password
 from app.db.session import get_db
@@ -90,3 +91,7 @@ def logout(
     if refresh_token is not None:
         revoke_refresh_token(db, refresh_token)
     response.delete_cookie(key=settings.refresh_token_cookie_name, path="/auth")
+
+@router.get("/me", response_model=UserRead)
+def get_me(current_user: User = Depends(get_current_user)) -> User:
+    return current_user
