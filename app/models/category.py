@@ -24,4 +24,4 @@ class Category(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="categories")
-    tasks: Mapped[list["Task"]] = relationship(back_populates="category")
+    tasks: Mapped[list["Task"]] = relationship(back_populates="category", passive_deletes=True)

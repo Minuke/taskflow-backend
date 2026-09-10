@@ -1,14 +1,14 @@
 from datetime import datetime
 from typing import Self
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from app.schemas.base import CamelModel
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
-
-class UserCreate(BaseModel):
+class UserCreate(CamelModel):
     name: str
     email: EmailStr
     password: str
-    password_confirm: str
+    confirm_password: str
 
     @field_validator("name")
     @classmethod
@@ -26,14 +26,12 @@ class UserCreate(BaseModel):
 
     @model_validator(mode="after")
     def passwords_match(self) -> Self:
-        if self.password != self.password_confirm:
+        if self.password != self.confirm_password:
             raise ValueError("Las contraseñas no coinciden.")
         return self
 
 
-class UserRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class UserRead(CamelModel):
     id: int
     name: str
     email: EmailStr
