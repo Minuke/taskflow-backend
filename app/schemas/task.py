@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from app.core.dates import today_utc
 from app.models.task import Priority
@@ -18,13 +18,26 @@ class TaskBase(CamelModel):
 
 
 class TaskCreate(TaskBase):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "title": "Estudiar FastAPI",
+                    "description": "Repasar dependency injection y validación con Pydantic.",
+                    "priority": "medium",
+                    "estimatedHours": 2.5,
+                    "dueDate": "2026-12-31",
+                }
+            ]
+        }
+    )
+
     @field_validator("due_date")
     @classmethod
     def due_date_not_in_past(cls, value: date | None) -> date | None:
         if value is not None and value < today_utc():
             raise ValueError("La fecha límite no puede ser anterior a hoy.")
         return value
-
 
 class TaskUpdate(TaskBase):
     """Misma forma que TaskCreate, pero sin la validación de fecha aquí:

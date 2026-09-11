@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
 from app.api.deps import get_current_user, get_owned_category_or_404, get_owned_task_or_404
 from app.core.dates import today_utc
 from app.db.session import get_db
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.task import TaskCreate, TaskRead, TaskUpdate
+from fastapi import Query
+from sqlalchemy import select
+from app.schemas.task_query import DueFilter, PriorityFilter, SortField, SortOrder, StatusFilter
+from app.services.task_query_service import build_order_by, build_task_conditions
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -102,3 +105,28 @@ def delete_task(
     task = get_owned_task_or_404(db, task_id, current_user.id)
     db.delete(task)
     db.commit()
+
+@router.get("", response_model=list[TaskRead])
+def list_tasks(
+    search: str | None = Query(default=None),
+    status_filter: StatusFilter = Query(default=StatusFilter.ALL, alias="status"),
+    priority_filter: PriorityFilter = Query(default=PriorityFilter.ALL, alias="priority"),
+    category_id: int | None = Query(default=None),
+    due: DueFilter = Query(default=DueFilter.ALL),
+    sort_by: SortField = Query(default=SortField.UPDATED_AT),
+    order: SortOrder = Query(default=SortOrder.DESC),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[Task]:
+    conditions = build_task_conditions(
+        user_id=current_user.id,
+        search=search,
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        category_id=category_id,
+        due=due,
+    )
+    order_by_clauses = build_order_by(sort_by, order)
+
+    stmt = select(Task).where(*conditions).order_by(*order_by_clauses)
+    return list(db.scalars(stmt).all())
