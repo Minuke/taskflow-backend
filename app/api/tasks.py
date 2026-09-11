@@ -76,3 +76,19 @@ def update_task(
     db.commit()
     db.refresh(task)
     return task
+
+@router.patch("/{task_id}/complete", response_model=TaskRead)
+def complete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Task:
+    task = get_owned_task_or_404(db, task_id, current_user.id)
+
+    if not task.completed:
+        task.completed = True
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+
+    return task
