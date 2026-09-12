@@ -5,9 +5,11 @@ from app.api import categories
 from app.api import tasks
 from app.api import dashboard
 from fastapi.staticfiles import StaticFiles
+from app.core.error_handlers import register_error_handlers
 from app.core.config import settings
 
 app = FastAPI(title=settings.project_name)
+register_error_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
