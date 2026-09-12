@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth
 from app.api import categories
 from app.api import tasks
-
+from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 
 app = FastAPI(title=settings.project_name)
@@ -15,6 +15,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/media/tasks", StaticFiles(directory=settings.upload_dir), name="task-media")
 
 app.include_router(auth.router)
 app.include_router(categories.router)

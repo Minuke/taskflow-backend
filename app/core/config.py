@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 30
     refresh_token_cookie_name: str = "refresh_token"
     cookie_secure: bool = False
+    upload_dir: str = "uploads/tasks"
+    max_upload_size_mb: int = 5
 
 
 settings = Settings()

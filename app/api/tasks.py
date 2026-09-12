@@ -10,8 +10,26 @@ from fastapi import Query
 from sqlalchemy import select, func
 from app.schemas.task_query import DueFilter, PriorityFilter, SortField, SortOrder, StatusFilter
 from app.services.task_query_service import build_order_by, build_task_conditions
+import io
+import uuid
+from pathlib import Path
+from fastapi import File, UploadFile
+from PIL import Image, UnidentifiedImageError
+from app.core.config import settings
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_IMAGE_FORMATS = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}
+
+UPLOAD_DIR = Path(settings.upload_dir)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+def _delete_task_image_file(image_url: str | None) -> None:
+    if not image_url:
+        return
+    filename = Path(image_url).name
+    (UPLOAD_DIR / filename).unlink(missing_ok=True)
 
 
 def _ensure_category_belongs_to_user(db: Session, category_id: int | None, user_id: int) -> None:
@@ -144,3 +162,69 @@ def list_tasks(
     total_pages = (total + page_size - 1) // page_size if total > 0 else 0
 
     return TaskPage(items=items, total=total, page=page, page_size=page_size, total_pages=total_pages)
+
+
+@router.post("/{task_id}/image", response_model=TaskRead)
+def upload_task_image(
+    task_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Task:
+    task = get_owned_task_or_404(db, task_id, current_user.id)
+
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Formato no permitido. Sube una imagen JPEG, PNG o WEBP.",
+        )
+
+    contents = file.file.read()
+
+    max_size_bytes = settings.max_upload_size_mb * 1024 * 1024
+    if len(contents) > max_size_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"La imagen no puede superar los {settings.max_upload_size_mb} MB.",
+        )
+
+    try:
+        buffer = io.BytesIO(contents)
+        Image.open(buffer).verify()
+        buffer.seek(0)
+        image_format = Image.open(buffer).format
+    except UnidentifiedImageError:
+        image_format = None
+
+    if image_format not in ALLOWED_IMAGE_FORMATS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El archivo no es una imagen válida.",
+        )
+
+    _delete_task_image_file(task.image)
+
+    filename = f"{uuid.uuid4().hex}{ALLOWED_IMAGE_FORMATS[image_format]}"
+    (UPLOAD_DIR / filename).write_bytes(contents)
+
+    task.image = f"/media/tasks/{filename}"
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+    return task
+
+@router.delete("/{task_id}/image", response_model=TaskRead)
+def delete_task_image(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Task:
+    task = get_owned_task_or_404(db, task_id, current_user.id)
+
+    _delete_task_image_file(task.image)
+    task.image = None
+
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+    return task
