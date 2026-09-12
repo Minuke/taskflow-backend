@@ -52,3 +52,10 @@ class TaskRead(TaskBase):
     image: str | None
     created_at: datetime
     updated_at: datetime
+
+class TaskPage(CamelModel):
+    items: list[TaskRead]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int

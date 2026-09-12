@@ -5,9 +5,9 @@ from app.core.dates import today_utc
 from app.db.session import get_db
 from app.models.task import Task
 from app.models.user import User
-from app.schemas.task import TaskCreate, TaskRead, TaskUpdate
+from app.schemas.task import TaskCreate, TaskPage, TaskRead, TaskUpdate
 from fastapi import Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.schemas.task_query import DueFilter, PriorityFilter, SortField, SortOrder, StatusFilter
 from app.services.task_query_service import build_order_by, build_task_conditions
 
@@ -106,7 +106,7 @@ def delete_task(
     db.delete(task)
     db.commit()
 
-@router.get("", response_model=list[TaskRead])
+@router.get("", response_model=TaskPage)
 def list_tasks(
     search: str | None = Query(default=None),
     status_filter: StatusFilter = Query(default=StatusFilter.ALL, alias="status"),
@@ -115,9 +115,11 @@ def list_tasks(
     due: DueFilter = Query(default=DueFilter.ALL),
     sort_by: SortField = Query(default=SortField.UPDATED_AT),
     order: SortOrder = Query(default=SortOrder.DESC),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> list[Task]:
+) -> TaskPage:
     conditions = build_task_conditions(
         user_id=current_user.id,
         search=search,
@@ -128,5 +130,17 @@ def list_tasks(
     )
     order_by_clauses = build_order_by(sort_by, order)
 
-    stmt = select(Task).where(*conditions).order_by(*order_by_clauses)
-    return list(db.scalars(stmt).all())
+    total = db.scalar(select(func.count()).select_from(Task).where(*conditions)) or 0
+
+    items_stmt = (
+        select(Task)
+        .where(*conditions)
+        .order_by(*order_by_clauses)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    items = list(db.scalars(items_stmt).all())
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+    return TaskPage(items=items, total=total, page=page, page_size=page_size, total_pages=total_pages)
