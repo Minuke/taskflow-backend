@@ -23,7 +23,7 @@ def validation_exception_handler(request: Request, exc: RequestValidationError) 
     ]
     body = ErrorResponse(detail="Los datos enviados no son válidos.", errors=errors)
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content=body.model_dump(by_alias=True),
     )
 

@@ -82,7 +82,7 @@ def update_task(
     due_date_changed = payload.due_date != task.due_date
     if due_date_changed and payload.due_date is not None and payload.due_date < today_utc():
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="La fecha límite no puede ser anterior a hoy.",
         )
 
@@ -175,7 +175,7 @@ def upload_task_image(
 
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Formato no permitido. Sube una imagen JPEG, PNG o WEBP.",
         )
 
@@ -198,7 +198,7 @@ def upload_task_image(
 
     if image_format not in ALLOWED_IMAGE_FORMATS:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="El archivo no es una imagen válida.",
         )
 

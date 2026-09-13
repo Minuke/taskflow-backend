@@ -6,3 +6,6 @@ __pycache__/
 .mypy_cache/
 .scannerwork/
 uploads/
+.env.test
+uploads/tasks_test/
+.coverage
