@@ -1,14 +1,22 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth
-from app.api import categories
-from app.api import tasks
-from app.api import dashboard
 from fastapi.staticfiles import StaticFiles
-from app.core.error_handlers import register_error_handlers
-from app.core.config import settings
 
-app = FastAPI(title=settings.project_name)
+from app.api import auth, categories, dashboard, tasks
+from app.core.config import settings
+from app.core.error_handlers import register_error_handlers
+from app.core.logging import configure_logging
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    configure_logging(level="DEBUG" if settings.environment == "development" else "INFO")
+    yield
+
+
+app = FastAPI(title=settings.project_name, lifespan=lifespan)
 register_error_handlers(app)
 
 app.add_middleware(
@@ -19,12 +27,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/media/tasks", StaticFiles(directory=settings.upload_dir), name="task-media")
-
 app.include_router(auth.router)
 app.include_router(categories.router)
 app.include_router(tasks.router)
 app.include_router(dashboard.router)
+
+app.mount("/media/tasks", StaticFiles(directory=settings.upload_dir), name="task-media")
+
 
 @app.get("/health")
 def health_check() -> dict[str, str]:

@@ -14,7 +14,12 @@ def test_sort_by_due_date_breaks_ties_by_priority(auth_client):
     )
     auth_client.post(
         "/tasks",
-        json={"title": "Media", "priority": "medium", "estimatedHours": 1, "dueDate": same_due_date},
+        json={
+            "title": "Media",
+            "priority": "medium",
+            "estimatedHours": 1,
+            "dueDate": same_due_date,
+        },
     )
 
     response = auth_client.get("/tasks?sort_by=dueDate&order=asc")
@@ -24,7 +29,9 @@ def test_sort_by_due_date_breaks_ties_by_priority(auth_client):
 
 
 def test_tasks_without_due_date_go_last_regardless_of_order(auth_client):
-    auth_client.post("/tasks", json={"title": "Sin fecha", "priority": "medium", "estimatedHours": 1})
+    auth_client.post(
+        "/tasks", json={"title": "Sin fecha", "priority": "medium", "estimatedHours": 1}
+    )
     auth_client.post(
         "/tasks",
         json={

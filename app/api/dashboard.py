@@ -1,12 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import and_, func, select
-from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import CurrentUser, DbSession
 from app.core.dates import today_utc
-from app.db.session import get_db
 from app.models.task import Priority, Task
-from app.models.user import User
 from app.schemas.dashboard import DashboardResponse, DashboardSummary
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -14,11 +11,8 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 DASHBOARD_LIST_LIMIT = 4
 
 
-@router.get("", response_model=DashboardResponse)
-def get_dashboard(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> DashboardResponse:
+@router.get("")
+def get_dashboard(db: DbSession, current_user: CurrentUser) -> DashboardResponse:
     today = today_utc()
 
     summary_stmt = select(

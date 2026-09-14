@@ -18,4 +18,5 @@ class Base(DeclarativeBase):
 
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
+
 CASCADE_DELETE_ORPHAN = "all, delete-orphan"

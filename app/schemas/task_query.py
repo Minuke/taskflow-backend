@@ -1,20 +1,20 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class StatusFilter(str, Enum):
+class StatusFilter(StrEnum):
     ALL = "all"
     PENDING = "pending"
     COMPLETED = "completed"
 
 
-class PriorityFilter(str, Enum):
+class PriorityFilter(StrEnum):
     ALL = "all"
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
 
 
-class DueFilter(str, Enum):
+class DueFilter(StrEnum):
     ALL = "all"
     OVERDUE = "overdue"
     TODAY = "today"
@@ -22,7 +22,7 @@ class DueFilter(str, Enum):
     NO_DATE = "noDate"
 
 
-class SortField(str, Enum):
+class SortField(StrEnum):
     TITLE = "title"
     PRIORITY = "priority"
     DUE_DATE = "dueDate"
@@ -30,6 +30,6 @@ class SortField(str, Enum):
     UPDATED_AT = "updatedAt"
 
 
-class SortOrder(str, Enum):
+class SortOrder(StrEnum):
     ASC = "asc"
     DESC = "desc"

@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import decode
@@ -13,11 +15,10 @@ from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+DbSession = Annotated[Session, Depends(get_db)]
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-) -> User:
+
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: DbSession) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se pudo validar la sesión.",
@@ -26,8 +27,8 @@ def get_current_user(
 
     try:
         payload = decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
-    except InvalidTokenError:
-        raise credentials_exception
+    except InvalidTokenError as exc:
+        raise credentials_exception from exc
 
     user_id = payload.get("sub")
     if user_id is None:
@@ -40,6 +41,9 @@ def get_current_user(
     return user
 
 
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
 def get_owned_category_or_404(db: Session, category_id: int, user_id: int) -> Category:
     category = db.scalar(
         select(Category).where(Category.id == category_id, Category.user_id == user_id)
@@ -50,9 +54,7 @@ def get_owned_category_or_404(db: Session, category_id: int, user_id: int) -> Ca
 
 
 def get_owned_task_or_404(db: Session, task_id: int, user_id: int) -> Task:
-    task = db.scalar(
-        select(Task).where(Task.id == task_id, Task.user_id == user_id)
-    )
+    task = db.scalar(select(Task).where(Task.id == task_id, Task.user_id == user_id))
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recurso no encontrado.")
     return task

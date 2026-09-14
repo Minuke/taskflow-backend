@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from app.models.task import Task
     from app.models.user import User
@@ -16,7 +16,7 @@ class Category(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(40))
-    description: Mapped[Optional[str]] = mapped_column(String(200))
+    description: Mapped[str | None] = mapped_column(String(200))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

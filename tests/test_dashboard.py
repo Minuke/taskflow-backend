@@ -2,8 +2,12 @@ from datetime import date
 
 
 def test_dashboard_summary_matches_manual_counts(auth_client):
-    auth_client.post("/tasks", json={"title": "Pendiente 1", "priority": "high", "estimatedHours": 1})
-    auth_client.post("/tasks", json={"title": "Pendiente 2", "priority": "low", "estimatedHours": 1})
+    auth_client.post(
+        "/tasks", json={"title": "Pendiente 1", "priority": "high", "estimatedHours": 1}
+    )
+    auth_client.post(
+        "/tasks", json={"title": "Pendiente 2", "priority": "low", "estimatedHours": 1}
+    )
     completed = auth_client.post(
         "/tasks", json={"title": "Completada", "priority": "high", "estimatedHours": 1}
     ).json()

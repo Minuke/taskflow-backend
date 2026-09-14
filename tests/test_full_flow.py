@@ -12,7 +12,9 @@ def test_complete_user_journey(client):
     token = register_response.json()["access_token"]
     client.headers["Authorization"] = f"Bearer {token}"
 
-    category_id = client.post("/categories", json={"name": "Backend", "description": None}).json()["id"]
+    category_id = client.post("/categories", json={"name": "Backend", "description": None}).json()[
+        "id"
+    ]
 
     task_response = client.post(
         "/tasks",
@@ -34,8 +36,11 @@ def test_complete_user_journey(client):
     assert dashboard["summary"]["total"] == 1
     assert dashboard["summary"]["completed"] == 1
 
-    assert client.post(
-        "/auth/login", data={"username": "ana@example.com", "password": "unacontraseñasegura"}
-    ).status_code == 200
+    assert (
+        client.post(
+            "/auth/login", data={"username": "ana@example.com", "password": "unacontraseñasegura"}
+        ).status_code
+        == 200
+    )
 
     assert client.post("/auth/logout").status_code == 204

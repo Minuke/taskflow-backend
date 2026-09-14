@@ -39,6 +39,7 @@ class TaskCreate(TaskBase):
             raise ValueError("La fecha límite no puede ser anterior a hoy.")
         return value
 
+
 class TaskUpdate(TaskBase):
     """Misma forma que TaskCreate, pero sin la validación de fecha aquí:
     en edición, esa regla depende del valor anterior guardado en la base
@@ -52,6 +53,7 @@ class TaskRead(TaskBase):
     image: str | None
     created_at: datetime
     updated_at: datetime
+
 
 class TaskPage(CamelModel):
     items: list[TaskRead]

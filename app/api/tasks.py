@@ -1,21 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.api.deps import get_current_user, get_owned_category_or_404, get_owned_task_or_404
-from app.core.dates import today_utc
-from app.db.session import get_db
-from app.models.task import Task
-from app.models.user import User
-from app.schemas.task import TaskCreate, TaskPage, TaskRead, TaskUpdate
-from fastapi import Query
-from sqlalchemy import select, func
-from app.schemas.task_query import DueFilter, PriorityFilter, SortField, SortOrder, StatusFilter
-from app.services.task_query_service import build_order_by, build_task_conditions
 import io
 import uuid
 from pathlib import Path
-from fastapi import File, UploadFile
+from typing import Annotated
+
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from PIL import Image, UnidentifiedImageError
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.api.deps import CurrentUser, DbSession, get_owned_category_or_404, get_owned_task_or_404
 from app.core.config import settings
+from app.core.dates import today_utc
+from app.models.task import Task
+from app.schemas.task import TaskCreate, TaskPage, TaskRead, TaskUpdate
+from app.schemas.task_query import DueFilter, PriorityFilter, SortField, SortOrder, StatusFilter
+from app.services.task_query_service import build_order_by, build_task_conditions
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -24,6 +23,7 @@ ALLOWED_IMAGE_FORMATS = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}
 
 UPLOAD_DIR = Path(settings.upload_dir)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def _delete_task_image_file(image_url: str | None) -> None:
     if not image_url:
@@ -38,11 +38,7 @@ def _ensure_category_belongs_to_user(db: Session, category_id: int | None, user_
 
 
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
-def create_task(
-    payload: TaskCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Task:
+def create_task(payload: TaskCreate, db: DbSession, current_user: CurrentUser) -> Task:
     _ensure_category_belongs_to_user(db, payload.category_id, current_user.id)
 
     task = Task(
@@ -61,20 +57,13 @@ def create_task(
 
 
 @router.get("/{task_id}", response_model=TaskRead)
-def get_task(
-    task_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Task:
+def get_task(task_id: int, db: DbSession, current_user: CurrentUser) -> Task:
     return get_owned_task_or_404(db, task_id, current_user.id)
 
 
 @router.put("/{task_id}", response_model=TaskRead)
 def update_task(
-    task_id: int,
-    payload: TaskUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    task_id: int, payload: TaskUpdate, db: DbSession, current_user: CurrentUser
 ) -> Task:
     task = get_owned_task_or_404(db, task_id, current_user.id)
     _ensure_category_belongs_to_user(db, payload.category_id, current_user.id)
@@ -98,12 +87,9 @@ def update_task(
     db.refresh(task)
     return task
 
+
 @router.patch("/{task_id}/complete", response_model=TaskRead)
-def complete_task(
-    task_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Task:
+def complete_task(task_id: int, db: DbSession, current_user: CurrentUser) -> Task:
     task = get_owned_task_or_404(db, task_id, current_user.id)
 
     if not task.completed:
@@ -114,29 +100,27 @@ def complete_task(
 
     return task
 
+
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(
-    task_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> None:
+def delete_task(task_id: int, db: DbSession, current_user: CurrentUser) -> None:
     task = get_owned_task_or_404(db, task_id, current_user.id)
     db.delete(task)
     db.commit()
 
-@router.get("", response_model=TaskPage)
+
+@router.get("")
 def list_tasks(
-    search: str | None = Query(default=None),
-    status_filter: StatusFilter = Query(default=StatusFilter.ALL, alias="status"),
-    priority_filter: PriorityFilter = Query(default=PriorityFilter.ALL, alias="priority"),
-    category_id: int | None = Query(default=None),
-    due: DueFilter = Query(default=DueFilter.ALL),
-    sort_by: SortField = Query(default=SortField.UPDATED_AT),
-    order: SortOrder = Query(default=SortOrder.DESC),
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=10, ge=1, le=100),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: DbSession,
+    current_user: CurrentUser,
+    search: Annotated[str | None, Query()] = None,
+    status_filter: Annotated[StatusFilter, Query(alias="status")] = StatusFilter.ALL,
+    priority_filter: Annotated[PriorityFilter, Query(alias="priority")] = PriorityFilter.ALL,
+    category_id: Annotated[int | None, Query()] = None,
+    due: Annotated[DueFilter, Query()] = DueFilter.ALL,
+    sort_by: Annotated[SortField, Query()] = SortField.UPDATED_AT,
+    order: Annotated[SortOrder, Query()] = SortOrder.DESC,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 10,
 ) -> TaskPage:
     conditions = build_task_conditions(
         user_id=current_user.id,
@@ -161,15 +145,17 @@ def list_tasks(
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 0
 
-    return TaskPage(items=items, total=total, page=page, page_size=page_size, total_pages=total_pages)
+    return TaskPage(
+        items=items, total=total, page=page, page_size=page_size, total_pages=total_pages
+    )
 
 
 @router.post("/{task_id}/image", response_model=TaskRead)
 def upload_task_image(
     task_id: int,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: DbSession,
+    current_user: CurrentUser,
+    file: Annotated[UploadFile, File()],
 ) -> Task:
     task = get_owned_task_or_404(db, task_id, current_user.id)
 
@@ -213,12 +199,9 @@ def upload_task_image(
     db.refresh(task)
     return task
 
+
 @router.delete("/{task_id}/image", response_model=TaskRead)
-def delete_task_image(
-    task_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Task:
+def delete_task_image(task_id: int, db: DbSession, current_user: CurrentUser) -> Task:
     task = get_owned_task_or_404(db, task_id, current_user.id)
 
     _delete_task_image_file(task.image)

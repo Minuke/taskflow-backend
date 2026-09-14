@@ -1,0 +1,23 @@
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle: errores de estilo
+    "W",    # pycodestyle: warnings
+    "F",    # Pyflakes: errores reales (variables sin usar, imports muertos...)
+    "I",    # isort: orden de imports
+    "UP",   # pyupgrade: sintaxis moderna de Python
+    "B",    # flake8-bugbear: errores sutiles muy comunes
+    "SIM",  # flake8-simplify: simplificaciones de código
+    "C4",   # comprehensions mal construidas
+    "FAST", # reglas específicas de FastAPI (firmas de rutas, response_model redundantes)
+]
+ignore = ["E501"]  # la longitud de línea la controla el formateador, no el linter
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]  # en conftest.py el orden de imports es intencional (ver B15)
+
+[tool.ruff.format]
+quote-style = "double"

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Response
 from sqlalchemy import select
@@ -36,7 +36,7 @@ def issue_token_pair(db: Session, user: User, response: Response) -> Token:
     refresh_token = RefreshToken(
         user_id=user.id,
         token_hash=hash_refresh_token(raw_refresh_token),
-        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days),
+        expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days),
     )
     db.add(refresh_token)
     db.commit()
@@ -49,7 +49,7 @@ def rotate_refresh_token(db: Session, raw_refresh_token: str, response: Response
     token_hash = hash_refresh_token(raw_refresh_token)
     stored_token = db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if stored_token is None or stored_token.revoked_at is not None or stored_token.expires_at < now:
         raise InvalidRefreshTokenError()
 
@@ -67,6 +67,6 @@ def revoke_refresh_token(db: Session, raw_refresh_token: str) -> None:
     token_hash = hash_refresh_token(raw_refresh_token)
     stored_token = db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
     if stored_token is not None and stored_token.revoked_at is None:
-        stored_token.revoked_at = datetime.now(timezone.utc)
+        stored_token.revoked_at = datetime.now(UTC)
         db.add(stored_token)
         db.commit()

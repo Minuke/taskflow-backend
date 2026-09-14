@@ -1,22 +1,16 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_owned_category_or_404
-from app.db.session import get_db
+from app.api.deps import CurrentUser, DbSession, get_owned_category_or_404
 from app.models.category import Category
 from app.models.task import Task
-from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryListItem, CategoryRead, CategoryUpdate
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
-@router.get("", response_model=list[CategoryListItem])
-def list_categories(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> list[CategoryListItem]:
+@router.get("")
+def list_categories(db: DbSession, current_user: CurrentUser) -> list[CategoryListItem]:
     task_counts = (
         select(Task.category_id, func.count(Task.id).label("task_count"))
         .group_by(Task.category_id)
@@ -46,11 +40,7 @@ def list_categories(
 
 
 @router.post("", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
-def create_category(
-    payload: CategoryCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Category:
+def create_category(payload: CategoryCreate, db: DbSession, current_user: CurrentUser) -> Category:
     category = Category(name=payload.name, description=payload.description, user_id=current_user.id)
     db.add(category)
     db.commit()
@@ -59,20 +49,13 @@ def create_category(
 
 
 @router.get("/{category_id}", response_model=CategoryRead)
-def get_category(
-    category_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Category:
+def get_category(category_id: int, db: DbSession, current_user: CurrentUser) -> Category:
     return get_owned_category_or_404(db, category_id, current_user.id)
 
 
 @router.put("/{category_id}", response_model=CategoryRead)
 def update_category(
-    category_id: int,
-    payload: CategoryUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    category_id: int, payload: CategoryUpdate, db: DbSession, current_user: CurrentUser
 ) -> Category:
     category = get_owned_category_or_404(db, category_id, current_user.id)
     category.name = payload.name
@@ -84,11 +67,7 @@ def update_category(
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_category(
-    category_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> None:
+def delete_category(category_id: int, db: DbSession, current_user: CurrentUser) -> None:
     category = get_owned_category_or_404(db, category_id, current_user.id)
     db.delete(category)
     db.commit()

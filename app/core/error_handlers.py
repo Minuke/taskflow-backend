@@ -42,7 +42,9 @@ def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONRespon
     body = ErrorResponse(
         detail="Ya existe un registro con esos datos, o hace referencia a algo que no existe."
     )
-    return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=body.model_dump(by_alias=True))
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT, content=body.model_dump(by_alias=True)
+    )
 
 
 def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:

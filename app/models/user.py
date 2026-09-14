@@ -24,6 +24,10 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    categories: Mapped[list["Category"]] = relationship(back_populates="user", cascade=CASCADE_DELETE_ORPHAN)
+    categories: Mapped[list["Category"]] = relationship(
+        back_populates="user", cascade=CASCADE_DELETE_ORPHAN
+    )
     tasks: Mapped[list["Task"]] = relationship(back_populates="user", cascade=CASCADE_DELETE_ORPHAN)
-    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user", cascade=CASCADE_DELETE_ORPHAN)
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        back_populates="user", cascade=CASCADE_DELETE_ORPHAN
+    )

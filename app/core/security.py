@@ -1,6 +1,7 @@
-from datetime import datetime, timedelta, timezone
 import hashlib
 import secrets
+from datetime import UTC, datetime, timedelta
+
 import jwt
 from pwdlib import PasswordHash
 
@@ -24,11 +25,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(subject: str, expires_delta: timedelta | None = None) -> str:
-    expire = datetime.now(timezone.utc) + (
+    expire = datetime.now(UTC) + (
         expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
     )
     payload = {"sub": subject, "exp": expire}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+
 
 def generate_refresh_token() -> str:
     """Genera un token opaco con 256 bits de entropía criptográficamente segura."""

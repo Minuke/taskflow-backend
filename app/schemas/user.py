@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Self
+
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
+
 from app.schemas.base import CamelModel
 
 
@@ -13,9 +15,9 @@ class UserCreate(CamelModel):
     @field_validator("name")
     @classmethod
     def name_must_not_be_blank(cls, value: str) -> str:
-        if not value.strip():
+        if not value:
             raise ValueError("El nombre no puede estar vacío.")
-        return value.strip()
+        return value
 
     @field_validator("password")
     @classmethod

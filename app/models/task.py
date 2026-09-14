@@ -1,8 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
-from enum import Enum
-from typing import Optional
-from typing import TYPE_CHECKING
+from enum import StrEnum
+from typing import TYPE_CHECKING, Optional
+
 if TYPE_CHECKING:
     from app.models.category import Category
     from app.models.user import User
@@ -14,7 +14,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-class Priority(str, Enum):
+class Priority(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -25,7 +25,7 @@ class Task(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(80))
-    description: Mapped[Optional[str]] = mapped_column(String(500))
+    description: Mapped[str | None] = mapped_column(String(500))
     priority: Mapped[Priority] = mapped_column(
         SqlEnum(
             Priority,
@@ -36,9 +36,9 @@ class Task(Base):
     )
     estimated_hours: Mapped[Decimal] = mapped_column(Numeric(5, 2))
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
-    due_date: Mapped[Optional[date]] = mapped_column(Date)
-    image: Mapped[Optional[str]] = mapped_column(String(255))
-    category_id: Mapped[Optional[int]] = mapped_column(
+    due_date: Mapped[date | None] = mapped_column(Date)
+    image: Mapped[str | None] = mapped_column(String(255))
+    category_id: Mapped[int | None] = mapped_column(
         ForeignKey("categories.id", ondelete="SET NULL")
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))

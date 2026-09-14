@@ -9,3 +9,4 @@ uploads/
 .env.test
 uploads/tasks_test/
 .coverage
+.ruff_cache/
