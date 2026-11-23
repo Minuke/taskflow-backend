@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field, field_serializer, field_validator
 
 from app.core.dates import today_utc
 from app.models.task import Priority
@@ -61,3 +61,15 @@ class TaskPage(CamelModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class TaskRead(TaskBase):
+    id: int
+    completed: bool
+    image: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    @field_serializer("estimated_hours", when_used="json")
+    def serialize_estimated_hours(self, value: Decimal) -> float:
+        return float(value)
