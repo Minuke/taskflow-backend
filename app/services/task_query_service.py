@@ -61,6 +61,6 @@ def build_order_by(sort_by: SortField, order: SortOrder) -> list:
     if sort_by == SortField.DUE_DATE:
         direction = direction.nulls_last()
 
-    # Desempate: siempre por prioridad descendente (High > Medium > Low),
-    # sea cual sea el criterio principal elegido. Ver explicación más abajo.
-    return [direction, Task.priority.desc()]
+    # Desempate: prioridad descendente (High > Medium > Low) y, como último criterio único,
+    # el id, para que la paginación sea estable aunque haya empates completos.
+    return [direction, Task.priority.desc(), Task.id.desc()]
