@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.core.translations import translate_http_detail, translate_validation_error
 from app.schemas.error import ErrorResponse, FieldError
 
 logger = logging.getLogger("taskflow")
@@ -20,8 +21,7 @@ def validation_exception_handler(request: Request, exc: RequestValidationError) 
     errors = [
         FieldError(
             field=_field_name_from_loc(error["loc"]),
-            # Pydantic antepone "Value error, " a los mensajes de nuestros validadores.
-            message=error["msg"].removeprefix("Value error, "),
+            message=translate_validation_error(error),
         )
         for error in exc.errors()
     ]
@@ -33,7 +33,7 @@ def validation_exception_handler(request: Request, exc: RequestValidationError) 
 
 
 def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-    body = ErrorResponse(detail=str(exc.detail))
+    body = ErrorResponse(detail=translate_http_detail(str(exc.detail)))
     return JSONResponse(
         status_code=exc.status_code,
         content=body.model_dump(by_alias=True),

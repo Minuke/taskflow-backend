@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     upload_dir: str = "uploads/tasks"
     max_upload_size_mb: int = 5
+    rate_limit_enabled: bool = True
+    rate_limit_attempts: int = 5
+    rate_limit_window_seconds: int = 60
 
 
 settings = Settings()

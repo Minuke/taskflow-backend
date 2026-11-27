@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.config import settings
+from app.core.rate_limit import limit_login, limit_register
 from app.core.security import DUMMY_PASSWORD_HASH, hash_password, verify_password
 from app.models.user import User
 from app.schemas.user import Token, UserCreate, UserRead
@@ -19,7 +20,9 @@ from app.services.auth_service import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", status_code=status.HTTP_201_CREATED, dependencies=[Depends(limit_register)]
+)
 def register(payload: UserCreate, response: Response, db: DbSession) -> Token:
     existing_user = db.scalar(select(User).where(User.email == payload.email))
     if existing_user is not None:
@@ -40,7 +43,7 @@ def register(payload: UserCreate, response: Response, db: DbSession) -> Token:
     return issue_token_pair(db, user, response)
 
 
-@router.post("/login")
+@router.post("/login", dependencies=[Depends(limit_login)])
 def login(
     response: Response,
     db: DbSession,
