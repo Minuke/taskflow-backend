@@ -50,6 +50,8 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env             # edita DATABASE_URL y SECRET_KEY
 alembic upgrade head
+# Opcional: cargar datos de demo (usuario demo@taskflow.dev / Demo1234!)
+python -m scripts.seed
 python -m uvicorn app.main:app --reload
 ```
 
@@ -68,8 +70,10 @@ npm install
 npm start
 ```
 
-Abre http://localhost:4200 y **regístrate** (no hay usuarios precargados).
+Abre http://localhost:4200 y **regístrate**.
 
+> Puedes registrarte, o cargar datos de demo con `python -m scripts.seed`
+> (usuario `demo@taskflow.dev`, contraseña `Demo1234!`). Es solo para desarrollo.
 > Usa siempre `localhost`, no `127.0.0.1`: la cookie de refresh y CORS están configurados para `localhost`.
 
 ## Variables de entorno
@@ -169,7 +173,6 @@ Cobertura actual: **92 %** (30+ tests).
 
 ## Limitaciones conocidas
 
-- No hay usuario administrador precargado.
 - Sin rate limiting en login.
 - Algunos mensajes de validación de Pydantic están en inglés.
 - Las imágenes se sirven desde disco local (no apto para varias instancias).
@@ -181,4 +184,3 @@ Cobertura actual: **92 %** (30+ tests).
 - [ ] Mensajes de validación en español.
 - [ ] Rate limiting en autenticación.
 - [ ] Almacenamiento de imágenes en objeto (S3 o similar).
-- [ ] Script de seed de datos de demo.
