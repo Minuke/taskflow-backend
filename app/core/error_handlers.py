@@ -18,7 +18,11 @@ def _field_name_from_loc(loc: tuple) -> str:
 
 def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     errors = [
-        FieldError(field=_field_name_from_loc(error["loc"]), message=error["msg"])
+        FieldError(
+            field=_field_name_from_loc(error["loc"]),
+            # Pydantic antepone "Value error, " a los mensajes de nuestros validadores.
+            message=error["msg"].removeprefix("Value error, "),
+        )
         for error in exc.errors()
     ]
     body = ErrorResponse(detail="Los datos enviados no son válidos.", errors=errors)
